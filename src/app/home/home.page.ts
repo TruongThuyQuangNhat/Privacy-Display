@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectionStrategy, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MotionService } from '../services/motion.service';
@@ -9,6 +9,7 @@ import { SettingsService, AppSettings, ShapeConfig } from '../services/settings.
   templateUrl: './home.page.html', 
   styleUrls: ['./home.page.scss'],
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.OnPush, 
 })
 export class HomePage implements OnInit, OnDestroy {
   @ViewChild('displayArea') displayAreaRef!: ElementRef<HTMLDivElement>;
@@ -49,22 +50,21 @@ export class HomePage implements OnInit, OnDestroy {
 
     await this.motionService.start();
 
+    this.motionSub = this.motionService.orientation$.subscribe(o => {
+      this.computeOverlay(o.beta, o.gamma);
+      this.cdr.markForCheck();
+    });
+
     this.settingsSub = this.settingsService.settings$.subscribe(s => {
       this.settings = s;
       this.shape = { ...s.shape };
-    });
-
-    this.motionSub = this.motionService.orientation$.subscribe(o => {
-      this.computeOverlay(o.beta, o.gamma);
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
   ngOnDestroy() {
     this.settingsSub?.unsubscribe();
     this.motionSub?.unsubscribe();
-    // Dừng motion khi rời home (quan trọng khi navigate về setup)
-    this.motionService.reset();
   }
 
   // ── Overlay computation ──────────────────────────────────────

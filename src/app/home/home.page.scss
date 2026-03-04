@@ -237,3 +237,10 @@ ion-range {
   font-size: 11px; line-height: 1.55; color: var(--cp-text-muted);
   ion-icon { font-size: 15px; color: var(--ion-color-primary); flex-shrink: 0; margin-top: 1px; }
 }
+
+.shape-overlay,
+.fullscreen-overlay {
+  transition: opacity 0.1s linear, backdrop-filter 0.1s linear;
+  will-change: opacity;
+  transform: translateZ(0);
+}

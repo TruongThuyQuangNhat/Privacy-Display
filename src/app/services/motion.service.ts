@@ -125,11 +125,29 @@ export class MotionService {
   private _registerWebListener(): void {
     if (this._webListener) return;
     if (!window.DeviceOrientationEvent) return;
+
+    let rafId: number | null = null;
+    let latestEvent: DeviceOrientationEvent | null = null;
+
     this._webListener = (e: DeviceOrientationEvent) => {
-      this.zone.run(() =>
-        this.orientation$.next({ alpha: e.alpha ?? 0, beta: e.beta ?? 0, gamma: e.gamma ?? 0 })
-      );
+      latestEvent = e;
+      // Nếu đã có frame đang chờ thì không queue thêm
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        if (!latestEvent) return;
+        const ev = latestEvent;
+        latestEvent = null;
+        this.zone.run(() =>
+          this.orientation$.next({
+            alpha: ev.alpha ?? 0,
+            beta:  ev.beta  ?? 0,
+            gamma: ev.gamma ?? 0,
+          })
+        );
+      });
     };
+
     window.addEventListener('deviceorientation', this._webListener as any, true);
   }
 
