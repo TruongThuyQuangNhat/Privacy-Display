@@ -1,95 +1,27 @@
-<ion-content class="setup-content" fullscreen>
-  <div class="setup-wrapper">
-
-    <!-- Logo -->
-    <div class="setup-header">
-      <div class="app-logo"><ion-icon name="eye-off-outline"></ion-icon></div>
-      <h1>Privacy Display</h1>
-      <p>Thiết lập góc nghiêng an toàn</p>
-    </div>
-
-    <ng-container *ngIf="!captureSuccess">
-
-      <!-- Live tilt meters -->
-      <div class="tilt-display">
-        <div class="tilt-meter">
-          <span class="label">Trước / Sau</span>
-          <div class="meter-track">
-            <div class="meter-fill" [style.width.%]="50 + (currentBeta / 90 * 50)"></div>
-            <div class="meter-center"></div>
-          </div>
-          <span class="value" [class.warning]="(currentBeta|abs) > 45">
-            {{ currentBeta > 0 ? '+' : '' }}{{ currentBeta }}°
-          </span>
-        </div>
-        <div class="tilt-meter">
-          <span class="label">Trái / Phải</span>
-          <div class="meter-track">
-            <div class="meter-fill" [style.width.%]="50 + (currentGamma / 90 * 50)"></div>
-            <div class="meter-center"></div>
-          </div>
-          <span class="value" [class.warning]="(currentGamma|abs) > 45">
-            {{ currentGamma > 0 ? '+' : '' }}{{ currentGamma }}°
-          </span>
-        </div>
-      </div>
-
-      <!-- Phone visual indicator -->
-      <div class="phone-visual-wrap">
-        <div class="phone-visual"
-          [style.transform]="'perspective(400px) rotateX(' + (-currentBeta*0.6) + 'deg) rotateZ(' + (-currentGamma*0.6) + 'deg)'">
-          <ion-icon name="phone-portrait-outline"></ion-icon>
-        </div>
-      </div>
-
-      <!-- Tolerance -->
-      <div class="tolerance-card">
-        <div class="tol-header">
-          <ion-icon name="resize-outline"></ion-icon>
-          <span>Vùng chấp nhận lệch: <strong>±{{ tolerance }}°</strong></span>
-        </div>
-        <ion-range [(ngModel)]="tolerance" [min]="5" [max]="30" [step]="1" color="primary">
-          <ion-label slot="start">Hẹp</ion-label>
-          <ion-label slot="end">Rộng</ion-label>
-        </ion-range>
-        <p class="tol-hint">Màn hình sẽ hiện bình thường khi nghiêng trong vòng ±{{ tolerance }}°</p>
-      </div>
-
-      <!-- Hold Button -->
-      <div class="capture-wrap">
-        <div class="hold-container">
-          <!-- SVG progress ring -->
-          <svg class="progress-ring" viewBox="0 0 160 160" *ngIf="isHolding">
-            <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
-            <circle cx="80" cy="80" r="70" fill="none" stroke="var(--ion-color-primary)" stroke-width="8"
-              stroke-dasharray="439.8"
-              [attr.stroke-dashoffset]="439.8 * (1 - holdProgress / 100)"
-              stroke-linecap="round" transform="rotate(-90 80 80)"/>
-          </svg>
-          <button class="hold-btn" [class.active]="isHolding"
-            (touchstart)="onHoldStart($event)" (touchend)="onHoldEnd($event)"
-            (touchcancel)="onHoldEnd($event)" (mousedown)="onHoldStart($event)"
-            (mouseup)="onHoldEnd($event)" (mouseleave)="onHoldEnd($event)">
-            <ion-icon [name]="isHolding ? 'radio-button-on' : 'hand-left-outline'"></ion-icon>
-            <span>{{ isHolding ? remainSec + 's' : 'GIỮ' }}</span>
-          </button>
-        </div>
-        <p class="capture-hint">
-          {{ isHolding ? 'Đang ghi... giữ tay!' : 'Nhấn và giữ 3 giây để lưu góc hiện tại' }}
-        </p>
-      </div>
-
-    </ng-container>
-
-    <!-- Success -->
-    <div class="success-wrap" *ngIf="captureSuccess">
-      <div class="success-icon-wrap">
-        <ion-icon name="checkmark-circle"></ion-icon>
-      </div>
-      <h2>Đã lưu thành công!</h2>
-      <p>Beta: {{ currentBeta }}° / Gamma: {{ currentGamma }}°</p>
-      <p class="go-hint">Chuyển đến màn hình chính...</p>
-    </div>
-
+<!-- iOS Permission Gate -->
+<div class="ios-permission-card" *ngIf="showIOSPermissionBtn">
+  <div class="ios-perm-icon">
+    <ion-icon name="compass-outline"></ion-icon>
   </div>
-</ion-content>
+  <h3>Cần quyền truy cập cảm biến</h3>
+  <p>
+    iOS yêu cầu bạn cho phép ứng dụng truy cập
+    cảm biến chuyển động để tính góc nghiêng.
+  </p>
+  <button class="ios-perm-btn" (click)="onRequestIOSPermission()">
+    <ion-icon name="lock-open-outline"></ion-icon>
+    Cho phép truy cập Motion
+  </button>
+</div>
+
+<!-- Permission denied error -->
+<div class="permission-error" *ngIf="permissionDenied">
+  <ion-icon name="warning-outline"></ion-icon>
+  <div>
+    <strong>Quyền bị từ chối</strong>
+    <p>
+      Vào <strong>Settings → Safari → Motion & Orientation Access</strong>
+      để bật lại, sau đó reload trang.
+    </p>
+  </div>
+</div>

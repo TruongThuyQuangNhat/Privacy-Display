@@ -18,24 +18,51 @@ export class SetupPage implements OnInit, OnDestroy {
   isCapturing = false;
   captureSuccess = false;
   tolerance = 10;
+  permissionDenied = false;
+
+  // iOS flow
+  iosPermissionGranted = false;
+
   private holdInterval: any = null;
   private sub: Subscription | null = null;
 
-  constructor(private motion: MotionService, private settings: SettingsService, private router: Router) {}
+  constructor(
+    private motion: MotionService,
+    private settings: SettingsService,
+    private router: Router
+  ) {}
 
   async ngOnInit() {
-    await this.motion.start();
     this.sub = this.motion.orientation$.subscribe(o => {
       this.currentBeta  = Math.round(o.beta  * 10) / 10;
       this.currentGamma = Math.round(o.gamma * 10) / 10;
     });
+
+    if (!this.motion.needsIOSPermission) {
+      await this.motion.start();
+    }
   }
 
   ngOnDestroy() { this.sub?.unsubscribe(); this.clearHold(); }
 
+
+  async onRequestIOSPermission() {
+    const granted = await this.motion.requestIOSPermission();
+    if (granted) {
+      this.iosPermissionGranted = true;
+      this.permissionDenied = false;
+      // Sau khi có quyền mới start listener
+      await this.motion.start();
+    } else {
+      this.permissionDenied = true;
+    }
+  }
+
   onHoldStart(ev: Event) {
     ev.preventDefault();
     if (this.isCapturing) return;
+    if (this.motion.needsIOSPermission && !this.iosPermissionGranted) return;
+
     this.isHolding = true;
     this.holdProgress = 0;
     const t0 = Date.now();
@@ -66,5 +93,9 @@ export class SetupPage implements OnInit, OnDestroy {
 
   get remainSec(): string {
     return ((100 - this.holdProgress) * 3 / 100).toFixed(1);
+  }
+
+  get showIOSPermissionBtn(): boolean {
+    return this.motion.needsIOSPermission && !this.iosPermissionGranted;
   }
 }
