@@ -20,7 +20,7 @@ export class SetupPage implements OnInit, OnDestroy {
   tolerance = 10;
   permissionDenied = false;
   iosPermissionGranted = false;
-  isLoading = true; // Tránh flash nội dung trước khi init xong
+  isLoading = true;
 
   private holdInterval: any = null;
   private sub: Subscription | null = null;
@@ -29,31 +29,31 @@ export class SetupPage implements OnInit, OnDestroy {
     private motion: MotionService,
     private settings: SettingsService,
     private router: Router,
-    private cdr: ChangeDetectorRef  // Quan trọng cho iOS
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit() {
-    // Reset motion service mỗi lần vào Setup (quan trọng cho recalibrate)
+    // Reset hoàn toàn mỗi lần vào trang Setup (kể cả khi recalibrate)
     await this.motion.reset();
 
-    // Load tolerance đã lưu
+    // Load tolerance đã lưu trước đó
     this.tolerance = this.settings.current.tolerance ?? 10;
 
-    // Subscribe nhận giá trị sensor
+    // Subscribe nhận giá trị cảm biến liên tục
     this.sub = this.motion.orientation$.subscribe(o => {
       this.currentBeta  = Math.round(o.beta  * 10) / 10;
       this.currentGamma = Math.round(o.gamma * 10) / 10;
       this.cdr.detectChanges();
     });
 
-    // Nếu là iOS Safari → chờ user tap để xin quyền
+    // iOS Safari: dừng lại, chờ user tự tap nút xin quyền
     if (this.motion.needsIOSPermission) {
       this.isLoading = false;
       this.cdr.detectChanges();
       return;
     }
 
-    // Android / Capacitor native → start ngay
+    // Android / Capacitor native: start cảm biến ngay
     await this.motion.start();
     this.isLoading = false;
     this.cdr.detectChanges();
@@ -64,9 +64,9 @@ export class SetupPage implements OnInit, OnDestroy {
     this.clearHold();
   }
 
-  // ── iOS: xin quyền ───────────────────────────────────────────
-  // Phải là synchronous click handler — requestPermission() phải là
-  // lệnh await ĐẦU TIÊN, không có await nào trước đó
+  // ── iOS: nút xin quyền cảm biến ──────────────────────────────
+  // requestPermission() phải là lệnh await ĐẦU TIÊN trong handler này
+  // iOS sẽ chặn nếu có bất kỳ await nào khác đứng trước
   async onRequestIOSPermission() {
     const granted = await this.motion.requestIOSPermission();
     if (granted) {
@@ -75,21 +75,21 @@ export class SetupPage implements OnInit, OnDestroy {
     } else {
       this.permissionDenied = true;
     }
-    // Force Angular re-render sau khi Promise resolve
     this.cdr.detectChanges();
   }
 
-  // ── Hold to capture ───────────────────────────────────────────
+  // ── Giữ nút 3 giây để lưu góc ────────────────────────────────
   onHoldStart(ev: Event) {
     ev.preventDefault();
     if (this.isCapturing) return;
 
-    // iOS: chưa cấp quyền thì không cho hold
+    // iOS chưa cấp quyền: chặn
     if (this.motion.needsIOSPermission && !this.iosPermissionGranted) return;
 
     this.isHolding = true;
     this.holdProgress = 0;
     const t0 = Date.now();
+
     this.holdInterval = setInterval(() => {
       this.holdProgress = Math.min(100, ((Date.now() - t0) / 3000) * 100);
       this.cdr.detectChanges();
@@ -126,7 +126,7 @@ export class SetupPage implements OnInit, OnDestroy {
     });
     this.captureSuccess = true;
     this.cdr.detectChanges();
-    setTimeout(() => this.router.navigateByUrl('/tabs/home'), 1200);
+    setTimeout(() => this.router.navigateByUrl('/tabs/home', { replaceUrl: true }), 1200);
   }
 
   get showIOSPermissionBtn(): boolean {
