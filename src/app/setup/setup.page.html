@@ -19,18 +19,29 @@
     <ng-container *ngIf="!isLoading && !captureSuccess">
 
       <!-- ── iOS: xin quyền cảm biến ─────────────────────────── -->
+      <!-- iOS: Lần đầu xin quyền -->
       <div class="ios-permission-card" *ngIf="showIOSPermissionBtn">
         <div class="ios-perm-icon">
           <ion-icon name="compass-outline"></ion-icon>
         </div>
         <h3>Cần quyền truy cập cảm biến</h3>
-        <p>
-          iOS yêu cầu bạn cho phép truy cập cảm biến
-          chuyển động để đo góc nghiêng điện thoại.
-        </p>
+        <p>iOS yêu cầu cho phép truy cập cảm biến chuyển động để đo góc nghiêng.</p>
         <button class="ios-perm-btn" (click)="onRequestIOSPermission()">
           <ion-icon name="lock-open-outline"></ion-icon>
           Cho phép truy cập Motion
+        </button>
+      </div>
+
+      <!-- iOS: Đã cấp quyền trước, chỉ cần tap để resume -->
+      <div class="tap-to-resume-card" *ngIf="showTapToResume">
+        <div class="tap-ripple">
+          <ion-icon name="finger-print-outline"></ion-icon>
+        </div>
+        <h3>Tap để tiếp tục</h3>
+        <p>iOS yêu cầu xác nhận mỗi lần tải lại trang.</p>
+        <button class="tap-resume-btn" (click)="onRequestIOSPermission()">
+          <ion-icon name="play-circle-outline"></ion-icon>
+          Tiếp tục
         </button>
       </div>
 

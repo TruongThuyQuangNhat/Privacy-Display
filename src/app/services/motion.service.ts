@@ -16,45 +16,52 @@ export class MotionService {
   private _capacitorHandle: any = null;
   private _webListener: ((e: DeviceOrientationEvent) => void) | null = null;
   private readonly _isNative = Capacitor.isNativePlatform();
-
-  // Cached để không gọi Preferences nhiều lần
-  private _iosAlreadyGranted: boolean | null = null;
+  private _iosPreviouslyGranted = false;  // đã cấp trong session trước
+  private _iosCurrentGranted = false;     // đã cấp trong session này
 
   constructor(private zone: NgZone) {}
 
-  // Kiểm tra iOS cần hỏi quyền không
-  // → false nếu là native app
-  // → false nếu đã từng cấp quyền rồi (đã lưu)
-  // → false nếu browser không có requestPermission (Android Chrome)
-  // → true chỉ khi iOS Safari lần đầu chưa cấp
-  get needsIOSPermission(): boolean {
-    if (this._isNative) return false;
-    if (typeof (DeviceOrientationEvent as any).requestPermission !== 'function') return false;
-    if (this._iosAlreadyGranted === true) return false;
-    return true;
-  }
-
-  // Gọi khi app khởi động để load trạng thái đã lưu
+  // Gọi khi app khởi động để biết user đã từng cấp chưa
   async checkIOSPermissionStatus(): Promise<void> {
     if (this._isNative) return;
-    if (typeof (DeviceOrientationEvent as any).requestPermission !== 'function') return;
-
+    if (!this._hasRequestPermissionAPI()) return;
     try {
       const { value } = await Preferences.get({ key: IOS_PERMISSION_KEY });
-      if (value === 'true') {
-        this._iosAlreadyGranted = true;
-      }
+      this._iosPreviouslyGranted = value === 'true';
     } catch (_) {}
   }
 
-  // Gọi TRỰC TIẾP trong (click) handler
+  // Cần hiện nút xin quyền lần đầu (chưa bao giờ cấp)
+  get needsFirstTimePermission(): boolean {
+    if (this._isNative) return false;
+    if (!this._hasRequestPermissionAPI()) return false;
+    return !this._iosPreviouslyGranted && !this._iosCurrentGranted;
+  }
+
+  // Cần tap để resume (đã cấp trước đó nhưng reload mất session)
+  get needsTapToResume(): boolean {
+    if (this._isNative) return false;
+    if (!this._hasRequestPermissionAPI()) return false;
+    return this._iosPreviouslyGranted && !this._iosCurrentGranted;
+  }
+
+  // iOS cần bất kỳ dạng user gesture nào
+  get needsAnyIOSGesture(): boolean {
+    return this.needsFirstTimePermission || this.needsTapToResume;
+  }
+
+  // Gọi TRỰC TIẾP trong (click) — không await gì trước
   async requestIOSPermission(): Promise<boolean> {
+    if (!this._hasRequestPermissionAPI()) {
+      this._iosCurrentGranted = true;
+      return true;
+    }
     try {
       const result = await (DeviceOrientationEvent as any).requestPermission();
       if (result === 'granted') {
         this.permissionDenied = false;
-        this._iosAlreadyGranted = true;
-        // Lưu lại để lần sau không hỏi nữa
+        this._iosCurrentGranted = true;
+        this._iosPreviouslyGranted = true;
         await Preferences.set({ key: IOS_PERMISSION_KEY, value: 'true' });
         this._registerWebListener();
         this._started = true;
@@ -71,15 +78,14 @@ export class MotionService {
 
   async start(): Promise<void> {
     if (this._started) return;
-
     if (this._isNative) {
       await this._startCapacitor();
-    } else if (!this.needsIOSPermission) {
-      // Android Chrome hoặc iOS đã cấp quyền từ trước
+    } else if (!this.needsAnyIOSGesture) {
+      // Android Chrome, desktop
       this._registerWebListener();
       this._started = true;
     }
-    // iOS lần đầu: không làm gì, chờ user tap nút
+    // iOS: chờ user gesture qua requestIOSPermission()
   }
 
   async reset(): Promise<void> {
@@ -94,6 +100,10 @@ export class MotionService {
     this._started = false;
     this.permissionDenied = false;
     this.orientation$.next({ alpha: 0, beta: 0, gamma: 0 });
+  }
+
+  private _hasRequestPermissionAPI(): boolean {
+    return typeof (DeviceOrientationEvent as any).requestPermission === 'function';
   }
 
   private async _startCapacitor(): Promise<void> {
@@ -115,7 +125,6 @@ export class MotionService {
   private _registerWebListener(): void {
     if (this._webListener) return;
     if (!window.DeviceOrientationEvent) return;
-
     this._webListener = (e: DeviceOrientationEvent) => {
       this.zone.run(() =>
         this.orientation$.next({ alpha: e.alpha ?? 0, beta: e.beta ?? 0, gamma: e.gamma ?? 0 })

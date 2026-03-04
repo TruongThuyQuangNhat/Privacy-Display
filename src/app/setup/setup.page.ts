@@ -35,14 +35,7 @@ export class SetupPage implements OnInit, OnDestroy {
   async ngOnInit() {
     await this.motion.reset();
     this.tolerance = this.settings.current.tolerance ?? 10;
-
-    // Kiểm tra iOS đã từng cấp quyền chưa — phải gọi TRƯỚC needsIOSPermission
     await this.motion.checkIOSPermissionStatus();
-
-    // Nếu iOS đã cấp rồi thì đánh dấu luôn, không hiện nút xin quyền
-    if (!this.motion.needsIOSPermission) {
-      this.iosPermissionGranted = true;
-    }
 
     this.sub = this.motion.orientation$.subscribe(o => {
       this.currentBeta  = Math.round(o.beta  * 10) / 10;
@@ -50,27 +43,18 @@ export class SetupPage implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    if (this.motion.needsIOSPermission) {
-      // iOS lần đầu: hiện nút xin quyền
+    if (this.motion.needsAnyIOSGesture) {
+      // iOS: hiện UI xin gesture, chưa start sensor
       this.isLoading = false;
       this.cdr.detectChanges();
       return;
     }
 
-    // Tất cả trường hợp còn lại: start ngay
     await this.motion.start();
     this.isLoading = false;
     this.cdr.detectChanges();
   }
 
-  ngOnDestroy() {
-    this.sub?.unsubscribe();
-    this.clearHold();
-  }
-
-  // ── iOS: nút xin quyền cảm biến ──────────────────────────────
-  // requestPermission() phải là lệnh await ĐẦU TIÊN trong handler này
-  // iOS sẽ chặn nếu có bất kỳ await nào khác đứng trước
   async onRequestIOSPermission() {
     const granted = await this.motion.requestIOSPermission();
     if (granted) {
@@ -82,13 +66,27 @@ export class SetupPage implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  // getter cập nhật
+  get showIOSPermissionBtn(): boolean {
+    return this.motion.needsFirstTimePermission && !this.iosPermissionGranted;
+  }
+
+  get showTapToResume(): boolean {
+    return this.motion.needsTapToResume && !this.iosPermissionGranted;
+  }
+
+  ngOnDestroy() {
+    this.sub?.unsubscribe();
+    this.clearHold();
+  }
+
   // ── Giữ nút 3 giây để lưu góc ────────────────────────────────
   onHoldStart(ev: Event) {
     ev.preventDefault();
     if (this.isCapturing) return;
 
-    // iOS chưa cấp quyền: chặn
-    if (this.motion.needsIOSPermission && !this.iosPermissionGranted) return;
+    // Thay needsIOSPermission bằng needsAnyIOSGesture
+    if (this.motion.needsAnyIOSGesture && !this.iosPermissionGranted) return;
 
     this.isHolding = true;
     this.holdProgress = 0;
@@ -131,10 +129,6 @@ export class SetupPage implements OnInit, OnDestroy {
     this.captureSuccess = true;
     this.cdr.detectChanges();
     setTimeout(() => this.router.navigateByUrl('/tabs/home', { replaceUrl: true }), 1200);
-  }
-
-  get showIOSPermissionBtn(): boolean {
-    return this.motion.needsIOSPermission && !this.iosPermissionGranted;
   }
 
   get remainSec(): string {
