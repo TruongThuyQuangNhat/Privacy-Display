@@ -11,23 +11,25 @@ export class MotionService {
 
   private _started = false;
   private _capacitorHandle: any = null;
+  private _webListener: ((e: DeviceOrientationEvent) => void) | null = null;
   private readonly _isNative = Capacitor.isNativePlatform();
 
   constructor(private zone: NgZone) {}
 
-  // iOS Safari cần xin permission riêng
   get needsIOSPermission(): boolean {
-    if (this._isNative) return false; // Native app dùng Capacitor, không cần
+    if (this._isNative) return false;
     return typeof (DeviceOrientationEvent as any).requestPermission === 'function';
   }
 
-  // Gọi hàm này TRỰC TIẾP trong (click) — không await gì trước đó
+  get isStarted(): boolean { return this._started; }
+
+  // Gọi TRỰC TIẾP trong (click) handler — không await gì trước đó
   async requestIOSPermission(): Promise<boolean> {
     try {
       const result = await (DeviceOrientationEvent as any).requestPermission();
       if (result === 'granted') {
         this.permissionDenied = false;
-        this.registerWebListener(); // Đăng ký listener ngay sau khi được cấp quyền
+        this._registerWebListener();
         this._started = true;
         return true;
       }
@@ -44,18 +46,34 @@ export class MotionService {
     if (this._started) return;
 
     if (this._isNative) {
-      // ── Native app: dùng Capacitor ─────────────────────────
-      await this.startCapacitor();
+      await this._startCapacitor();
     } else if (!this.needsIOSPermission) {
-      // ── Web Android / desktop: đăng ký thẳng ──────────────
-      this.registerWebListener();
+      // Android Chrome hoặc desktop
+      this._registerWebListener();
       this._started = true;
     }
-    // iOS Safari: KHÔNG làm gì ở đây
-    // start() sẽ không được gọi — flow xử lý qua requestIOSPermission()
+    // iOS Safari: không làm gì — xử lý qua requestIOSPermission()
   }
 
-  private async startCapacitor(): Promise<void> {
+  // Reset hoàn toàn để dùng lại (recalibrate)
+  async reset(): Promise<void> {
+    // Dọn Capacitor listener
+    if (this._capacitorHandle) {
+      try { await this._capacitorHandle.remove(); } catch (_) {}
+      this._capacitorHandle = null;
+    }
+    // Dọn web listener
+    if (this._webListener) {
+      window.removeEventListener('deviceorientation', this._webListener as any, true);
+      this._webListener = null;
+    }
+    this._started = false;
+    this.permissionDenied = false;
+    // Reset giá trị về 0
+    this.orientation$.next({ alpha: 0, beta: 0, gamma: 0 });
+  }
+
+  private async _startCapacitor(): Promise<void> {
     try {
       const { Motion } = await import('@capacitor/motion');
       this._capacitorHandle = await Motion.addListener('orientation', (e: any) => {
@@ -68,41 +86,27 @@ export class MotionService {
         );
       });
       this._started = true;
-      console.log('[Motion] Capacitor native sensor started');
     } catch (e) {
       console.warn('[Motion] Capacitor failed, falling back to web', e);
-      this.registerWebListener();
+      this._registerWebListener();
       this._started = true;
     }
   }
 
-  registerWebListener(): void {
-    if (!window.DeviceOrientationEvent) {
-      console.warn('[Motion] DeviceOrientationEvent not supported');
-      return;
-    }
-    window.addEventListener(
-      'deviceorientation',
-      (e: DeviceOrientationEvent) => {
-        this.zone.run(() =>
-          this.orientation$.next({
-            alpha: e.alpha ?? 0,
-            beta:  e.beta  ?? 0,
-            gamma: e.gamma ?? 0,
-          })
-        );
-      },
-      true
-    );
-    console.log('[Motion] Web DeviceOrientation listener registered');
-  }
+  private _registerWebListener(): void {
+    if (this._webListener) return; // Tránh đăng ký 2 lần
+    if (!window.DeviceOrientationEvent) return;
 
-  async stop(): Promise<void> {
-    if (this._capacitorHandle) {
-      try { await this._capacitorHandle.remove(); } catch (_) {}
-      this._capacitorHandle = null;
-    }
-    this._started = false;
+    this._webListener = (e: DeviceOrientationEvent) => {
+      this.zone.run(() =>
+        this.orientation$.next({
+          alpha: e.alpha ?? 0,
+          beta:  e.beta  ?? 0,
+          gamma: e.gamma ?? 0,
+        })
+      );
+    };
+    window.addEventListener('deviceorientation', this._webListener as any, true);
   }
 
   get current() { return this.orientation$.value; }

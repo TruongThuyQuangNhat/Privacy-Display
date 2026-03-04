@@ -52,6 +52,8 @@ export class HomePage implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.settingsSub?.unsubscribe();
     this.motionSub?.unsubscribe();
+    // Dừng motion khi rời home (quan trọng khi navigate về setup)
+    this.motionService.reset();
   }
 
   // ── Overlay computation ──────────────────────────────────────

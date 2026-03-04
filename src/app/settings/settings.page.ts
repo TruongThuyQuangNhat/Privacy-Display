@@ -48,7 +48,9 @@ export class SettingsPage implements OnInit {
           text: 'Đồng ý',
           handler: async () => {
             await this.settingsService.save({ isSetupDone: false });
-            this.router.navigateByUrl('/setup');
+            // Dùng replaceUrl: true để không giữ lại history
+            // tránh bấm Back quay về settings bị lỗi
+            this.router.navigateByUrl('/setup', { replaceUrl: true });
           }
         }
       ],
