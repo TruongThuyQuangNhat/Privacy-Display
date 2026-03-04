@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MotionService } from '../services/motion.service';
 import { SettingsService, AppSettings, ShapeConfig } from '../services/settings.service';
@@ -32,10 +33,20 @@ export class HomePage implements OnInit, OnDestroy {
   constructor(
     private motionService: MotionService,
     private settingsService: SettingsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   async ngOnInit() {
+    // Kiểm tra trạng thái permission iOS trước
+    await this.motionService.checkIOSPermissionStatus();
+
+    // iOS cần user gesture sau mỗi lần reload → về Setup
+    if (this.motionService.needsAnyIOSGesture) {
+      this.router.navigateByUrl('/setup', { replaceUrl: true });
+      return;
+    }
+
     await this.motionService.start();
 
     this.settingsSub = this.settingsService.settings$.subscribe(s => {
