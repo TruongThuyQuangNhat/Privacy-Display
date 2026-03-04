@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
 
 export interface DeviceOrientation { alpha: number; beta: number; gamma: number; }
 
@@ -7,27 +8,31 @@ export interface DeviceOrientation { alpha: number; beta: number; gamma: number;
 export class MotionService {
   orientation$ = new BehaviorSubject<DeviceOrientation>({ alpha: 0, beta: 0, gamma: 0 });
   permissionDenied = false;
+
   private _started = false;
   private _capacitorHandle: any = null;
+  private readonly _isNative = Capacitor.isNativePlatform();
 
   constructor(private zone: NgZone) {}
 
-  // Kiểm tra có phải iOS cần xin quyền không
+  // iOS Safari cần xin permission riêng
   get needsIOSPermission(): boolean {
+    if (this._isNative) return false; // Native app dùng Capacitor, không cần
     return typeof (DeviceOrientationEvent as any).requestPermission === 'function';
   }
 
-  // Gọi hàm này TRỰC TIẾP trong (click) handler — không được await gì trước đó
+  // Gọi hàm này TRỰC TIẾP trong (click) — không await gì trước đó
   async requestIOSPermission(): Promise<boolean> {
     try {
       const result = await (DeviceOrientationEvent as any).requestPermission();
       if (result === 'granted') {
         this.permissionDenied = false;
+        this.registerWebListener(); // Đăng ký listener ngay sau khi được cấp quyền
+        this._started = true;
         return true;
-      } else {
-        this.permissionDenied = true;
-        return false;
       }
+      this.permissionDenied = true;
+      return false;
     } catch (e) {
       console.warn('[Motion] iOS permission error', e);
       this.permissionDenied = true;
@@ -37,24 +42,38 @@ export class MotionService {
 
   async start(): Promise<void> {
     if (this._started) return;
-    this._started = true;
 
-    // Thử Capacitor trước (native app)
+    if (this._isNative) {
+      // ── Native app: dùng Capacitor ─────────────────────────
+      await this.startCapacitor();
+    } else if (!this.needsIOSPermission) {
+      // ── Web Android / desktop: đăng ký thẳng ──────────────
+      this.registerWebListener();
+      this._started = true;
+    }
+    // iOS Safari: KHÔNG làm gì ở đây
+    // start() sẽ không được gọi — flow xử lý qua requestIOSPermission()
+  }
+
+  private async startCapacitor(): Promise<void> {
     try {
       const { Motion } = await import('@capacitor/motion');
       this._capacitorHandle = await Motion.addListener('orientation', (e: any) => {
         this.zone.run(() =>
-          this.orientation$.next({ alpha: e.alpha ?? 0, beta: e.beta ?? 0, gamma: e.gamma ?? 0 })
+          this.orientation$.next({
+            alpha: e.alpha ?? 0,
+            beta:  e.beta  ?? 0,
+            gamma: e.gamma ?? 0,
+          })
         );
       });
-      console.log('[Motion] Using Capacitor native sensor');
-      return;
+      this._started = true;
+      console.log('[Motion] Capacitor native sensor started');
     } catch (e) {
-      console.log('[Motion] Capacitor not available, falling back to Web API');
+      console.warn('[Motion] Capacitor failed, falling back to web', e);
+      this.registerWebListener();
+      this._started = true;
     }
-
-    // Web fallback — iOS permission đã được xin riêng trước đó
-    this.registerWebListener();
   }
 
   registerWebListener(): void {
@@ -62,11 +81,19 @@ export class MotionService {
       console.warn('[Motion] DeviceOrientationEvent not supported');
       return;
     }
-    window.addEventListener('deviceorientation', (e: DeviceOrientationEvent) => {
-      this.zone.run(() =>
-        this.orientation$.next({ alpha: e.alpha ?? 0, beta: e.beta ?? 0, gamma: e.gamma ?? 0 })
-      );
-    }, true);
+    window.addEventListener(
+      'deviceorientation',
+      (e: DeviceOrientationEvent) => {
+        this.zone.run(() =>
+          this.orientation$.next({
+            alpha: e.alpha ?? 0,
+            beta:  e.beta  ?? 0,
+            gamma: e.gamma ?? 0,
+          })
+        );
+      },
+      true
+    );
     console.log('[Motion] Web DeviceOrientation listener registered');
   }
 
@@ -78,11 +105,6 @@ export class MotionService {
     this._started = false;
   }
 
-  reset(): void {
-    this.stop();
-    this.permissionDenied = false;
-  }
-
   get current() { return this.orientation$.value; }
-  get isNative(): boolean { return !!this._capacitorHandle; }
+  get isNative() { return this._isNative; }
 }

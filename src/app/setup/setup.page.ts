@@ -51,8 +51,7 @@ export class SetupPage implements OnInit, OnDestroy {
     if (granted) {
       this.iosPermissionGranted = true;
       this.permissionDenied = false;
-      // Sau khi có quyền mới start listener
-      await this.motion.start();
+      // KHÔNG gọi motion.start() nữa — đã xử lý bên trong service
     } else {
       this.permissionDenied = true;
     }
