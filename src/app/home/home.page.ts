@@ -61,16 +61,28 @@ export class HomePage implements OnInit, OnDestroy {
     if (!this.settings?.privacyEnabled) {
       this.overlayOpacity = 0; this.blurPx = 0; return;
     }
+
     const { baseBeta, baseGamma, tolerance } = this.settings;
+
     const deviation = Math.sqrt(
       Math.pow(beta - baseBeta, 2) + Math.pow(gamma - baseGamma, 2)
     );
+
     if (deviation <= tolerance) {
-      this.overlayOpacity = 0; this.blurPx = 0;
+      // Trong vùng an toàn: hoàn toàn trong suốt
+      this.overlayOpacity = 0;
+      this.blurPx = 0;
     } else {
-      const ratio = Math.min(1, (deviation - tolerance) / 55);
-      this.overlayOpacity = ratio * 0.92;
-      this.blurPx = ratio * 22;
+      // Ngoài vùng an toàn: tăng dần đến max
+      // maxDelta = 30 → nghiêng thêm 30° ngoài tolerance là che hoàn toàn
+      const maxDelta = 30;
+      const ratio = Math.min(1, (deviation - tolerance) / maxDelta);
+
+      // Dùng easeIn để tăng nhanh hơn ở cuối
+      const eased = ratio * ratio;
+
+      this.overlayOpacity = eased * 0.97;  // gần như đen/trắng hoàn toàn
+      this.blurPx = eased * 28;            // blur mạnh
     }
   }
 
