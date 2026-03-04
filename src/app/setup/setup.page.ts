@@ -34,6 +34,10 @@ export class SetupPage implements OnInit, OnDestroy {
 
   async ngOnInit() {
     await this.motion.reset();
+
+    // Chờ 1 tick để đảm bảo reset hoàn tất trước khi start
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     this.tolerance = this.settings.current.tolerance ?? 10;
     await this.motion.checkIOSPermissionStatus();
 
@@ -44,7 +48,6 @@ export class SetupPage implements OnInit, OnDestroy {
     });
 
     if (this.motion.needsAnyIOSGesture) {
-      // iOS: hiện UI xin gesture, chưa start sensor
       this.isLoading = false;
       this.cdr.detectChanges();
       return;
