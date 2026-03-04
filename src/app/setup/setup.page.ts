@@ -33,27 +33,31 @@ export class SetupPage implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit() {
-    // Reset hoàn toàn mỗi lần vào trang Setup (kể cả khi recalibrate)
     await this.motion.reset();
-
-    // Load tolerance đã lưu trước đó
     this.tolerance = this.settings.current.tolerance ?? 10;
 
-    // Subscribe nhận giá trị cảm biến liên tục
+    // Kiểm tra iOS đã từng cấp quyền chưa — phải gọi TRƯỚC needsIOSPermission
+    await this.motion.checkIOSPermissionStatus();
+
+    // Nếu iOS đã cấp rồi thì đánh dấu luôn, không hiện nút xin quyền
+    if (!this.motion.needsIOSPermission) {
+      this.iosPermissionGranted = true;
+    }
+
     this.sub = this.motion.orientation$.subscribe(o => {
       this.currentBeta  = Math.round(o.beta  * 10) / 10;
       this.currentGamma = Math.round(o.gamma * 10) / 10;
       this.cdr.detectChanges();
     });
 
-    // iOS Safari: dừng lại, chờ user tự tap nút xin quyền
     if (this.motion.needsIOSPermission) {
+      // iOS lần đầu: hiện nút xin quyền
       this.isLoading = false;
       this.cdr.detectChanges();
       return;
     }
 
-    // Android / Capacitor native: start cảm biến ngay
+    // Tất cả trường hợp còn lại: start ngay
     await this.motion.start();
     this.isLoading = false;
     this.cdr.detectChanges();

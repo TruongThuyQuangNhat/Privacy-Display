@@ -1,8 +1,11 @@
 import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 
 export interface DeviceOrientation { alpha: number; beta: number; gamma: number; }
+
+const IOS_PERMISSION_KEY = 'ios_motion_permission_granted';
 
 @Injectable({ providedIn: 'root' })
 export class MotionService {
@@ -14,21 +17,45 @@ export class MotionService {
   private _webListener: ((e: DeviceOrientationEvent) => void) | null = null;
   private readonly _isNative = Capacitor.isNativePlatform();
 
+  // Cached để không gọi Preferences nhiều lần
+  private _iosAlreadyGranted: boolean | null = null;
+
   constructor(private zone: NgZone) {}
 
+  // Kiểm tra iOS cần hỏi quyền không
+  // → false nếu là native app
+  // → false nếu đã từng cấp quyền rồi (đã lưu)
+  // → false nếu browser không có requestPermission (Android Chrome)
+  // → true chỉ khi iOS Safari lần đầu chưa cấp
   get needsIOSPermission(): boolean {
     if (this._isNative) return false;
-    return typeof (DeviceOrientationEvent as any).requestPermission === 'function';
+    if (typeof (DeviceOrientationEvent as any).requestPermission !== 'function') return false;
+    if (this._iosAlreadyGranted === true) return false;
+    return true;
   }
 
-  get isStarted(): boolean { return this._started; }
+  // Gọi khi app khởi động để load trạng thái đã lưu
+  async checkIOSPermissionStatus(): Promise<void> {
+    if (this._isNative) return;
+    if (typeof (DeviceOrientationEvent as any).requestPermission !== 'function') return;
 
-  // Gọi TRỰC TIẾP trong (click) handler — không await gì trước đó
+    try {
+      const { value } = await Preferences.get({ key: IOS_PERMISSION_KEY });
+      if (value === 'true') {
+        this._iosAlreadyGranted = true;
+      }
+    } catch (_) {}
+  }
+
+  // Gọi TRỰC TIẾP trong (click) handler
   async requestIOSPermission(): Promise<boolean> {
     try {
       const result = await (DeviceOrientationEvent as any).requestPermission();
       if (result === 'granted') {
         this.permissionDenied = false;
+        this._iosAlreadyGranted = true;
+        // Lưu lại để lần sau không hỏi nữa
+        await Preferences.set({ key: IOS_PERMISSION_KEY, value: 'true' });
         this._registerWebListener();
         this._started = true;
         return true;
@@ -48,28 +75,24 @@ export class MotionService {
     if (this._isNative) {
       await this._startCapacitor();
     } else if (!this.needsIOSPermission) {
-      // Android Chrome hoặc desktop
+      // Android Chrome hoặc iOS đã cấp quyền từ trước
       this._registerWebListener();
       this._started = true;
     }
-    // iOS Safari: không làm gì — xử lý qua requestIOSPermission()
+    // iOS lần đầu: không làm gì, chờ user tap nút
   }
 
-  // Reset hoàn toàn để dùng lại (recalibrate)
   async reset(): Promise<void> {
-    // Dọn Capacitor listener
     if (this._capacitorHandle) {
       try { await this._capacitorHandle.remove(); } catch (_) {}
       this._capacitorHandle = null;
     }
-    // Dọn web listener
     if (this._webListener) {
       window.removeEventListener('deviceorientation', this._webListener as any, true);
       this._webListener = null;
     }
     this._started = false;
     this.permissionDenied = false;
-    // Reset giá trị về 0
     this.orientation$.next({ alpha: 0, beta: 0, gamma: 0 });
   }
 
@@ -78,11 +101,7 @@ export class MotionService {
       const { Motion } = await import('@capacitor/motion');
       this._capacitorHandle = await Motion.addListener('orientation', (e: any) => {
         this.zone.run(() =>
-          this.orientation$.next({
-            alpha: e.alpha ?? 0,
-            beta:  e.beta  ?? 0,
-            gamma: e.gamma ?? 0,
-          })
+          this.orientation$.next({ alpha: e.alpha ?? 0, beta: e.beta ?? 0, gamma: e.gamma ?? 0 })
         );
       });
       this._started = true;
@@ -94,16 +113,12 @@ export class MotionService {
   }
 
   private _registerWebListener(): void {
-    if (this._webListener) return; // Tránh đăng ký 2 lần
+    if (this._webListener) return;
     if (!window.DeviceOrientationEvent) return;
 
     this._webListener = (e: DeviceOrientationEvent) => {
       this.zone.run(() =>
-        this.orientation$.next({
-          alpha: e.alpha ?? 0,
-          beta:  e.beta  ?? 0,
-          gamma: e.gamma ?? 0,
-        })
+        this.orientation$.next({ alpha: e.alpha ?? 0, beta: e.beta ?? 0, gamma: e.gamma ?? 0 })
       );
     };
     window.addEventListener('deviceorientation', this._webListener as any, true);
