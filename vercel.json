@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "buildCommand": "npm run build -- --configuration production",
+  "outputDirectory": "www",
+  "installCommand": "npm install"
+}

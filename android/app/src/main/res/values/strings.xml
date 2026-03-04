@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">privacy-display</string>
+    <string name="title_activity_main">privacy-display</string>
+    <string name="package_name">com.privacydisplay.app</string>
+    <string name="custom_url_scheme">com.privacydisplay.app</string>
+</resources>

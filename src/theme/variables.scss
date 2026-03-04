@@ -1,2 +1,116 @@
-// For information on how to create your own theme, please refer to:
-// https://ionicframework.com/docs/theming/
+// ════════════════════════════════════════════════════════════
+// DARK THEME (default)
+// ════════════════════════════════════════════════════════════
+:root, body {
+  --ion-color-primary:          #6c63ff;
+  --ion-color-primary-rgb:      108,99,255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade:    #5f57e0;
+  --ion-color-primary-tint:     #7b73ff;
+
+  --ion-color-secondary:        #3ec6e0;
+  --ion-color-warning:          #ff9f43;
+  --ion-color-success:          #2dd36f;
+  --ion-color-danger:           #ff6b6b;
+  --ion-color-medium:           rgba(255,255,255,0.35);
+  --ion-color-medium-rgb:       255,255,255;
+
+  --ion-background-color:          #0d0d1e;
+  --ion-background-color-rgb:      13,13,30;
+  --ion-text-color:                #ffffff;
+  --ion-text-color-rgb:            255,255,255;
+  --ion-toolbar-background:        #0d0d1e;
+  --ion-toolbar-color:             #ffffff;
+  --ion-tab-bar-background:        #111128;
+  --ion-tab-bar-border-color:      rgba(255,255,255,0.08);
+  --ion-tab-bar-color:             rgba(255,255,255,0.4);
+  --ion-tab-bar-color-selected:    #6c63ff;
+  --ion-item-background:           transparent;
+  --ion-item-color:                #ffffff;
+  --ion-border-color:              rgba(255,255,255,0.08);
+  --ion-card-background:           rgba(255,255,255,0.05);
+
+  // Content placeholder vars
+  --cp-text-primary:   #ffffff;
+  --cp-text-secondary: rgba(255,255,255,0.78);
+  --cp-text-muted:     rgba(255,255,255,0.42);
+  --cp-card-bg:        rgba(255,255,255,0.06);
+  --cp-bubble-in:      rgba(255,255,255,0.09);
+  --cp-border:         rgba(255,255,255,0.08);
+
+  // Page backgrounds
+  --page-bg:           #0d0d1e;
+  --surface-bg:        rgba(255,255,255,0.05);
+  --surface-border:    rgba(255,255,255,0.09);
+
+  // Range
+  --ion-range-bar-background: rgba(255,255,255,0.15);
+}
+
+// ════════════════════════════════════════════════════════════
+// LIGHT THEME
+// ════════════════════════════════════════════════════════════
+body.light-theme {
+  --ion-color-primary:          #5046e5;
+  --ion-color-primary-rgb:      80,70,229;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade:    #4740cc;
+  --ion-color-primary-tint:     #6259e8;
+
+  --ion-color-secondary:        #0891b2;
+  --ion-color-warning:          #d97706;
+  --ion-color-success:          #16a34a;
+  --ion-color-danger:           #dc2626;
+  --ion-color-medium:           #6b7280;
+  --ion-color-medium-rgb:       107,114,128;
+
+  --ion-background-color:          #f4f4fb;
+  --ion-background-color-rgb:      244,244,251;
+  --ion-text-color:                #1e1b4b;
+  --ion-text-color-rgb:            30,27,75;
+  --ion-toolbar-background:        #ffffff;
+  --ion-toolbar-color:             #1e1b4b;
+  --ion-tab-bar-background:        #ffffff;
+  --ion-tab-bar-border-color:      rgba(0,0,0,0.1);
+  --ion-tab-bar-color:             #9ca3af;
+  --ion-tab-bar-color-selected:    #5046e5;
+  --ion-item-background:           #ffffff;
+  --ion-item-color:                #1e1b4b;
+  --ion-border-color:              rgba(0,0,0,0.09);
+  --ion-card-background:           #ffffff;
+
+  // Content placeholder vars
+  --cp-text-primary:   #1e1b4b;
+  --cp-text-secondary: #374151;
+  --cp-text-muted:     #6b7280;
+  --cp-card-bg:        #f8f8ff;
+  --cp-bubble-in:      #ededf8;
+  --cp-border:         #e5e5f0;
+
+  // Page backgrounds
+  --page-bg:           #f4f4fb;
+  --surface-bg:        #ffffff;
+  --surface-border:    rgba(0,0,0,0.07);
+
+  // Range
+  --ion-range-bar-background: rgba(0,0,0,0.12);
+}
+
+// ════════════════════════════════════════════════════════════
+// DARK ALERT (dùng cho AlertController)
+// ════════════════════════════════════════════════════════════
+.dark-alert {
+  --background: #1a1a2e;
+  --button-color: #6c63ff;
+  .alert-title   { color: #fff; }
+  .alert-message { color: rgba(255,255,255,0.7); }
+  .alert-button  { color: #6c63ff; }
+}
+
+body.light-theme .dark-alert {
+  --background: #ffffff;
+  --button-color: #5046e5;
+  .alert-title   { color: #1e1b4b; }
+  .alert-message { color: #374151; }
+  .alert-button  { color: #5046e5; }
+}

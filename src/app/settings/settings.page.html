@@ -1,0 +1,144 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>Cài đặt</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="settings-content">
+  <ng-container *ngIf="settings">
+
+    <!-- Privacy toggle -->
+    <ion-list class="settings-list">
+      <ion-list-header>
+        <ion-label>Privacy Display</ion-label>
+      </ion-list-header>
+
+      <ion-item>
+        <ion-icon name="shield-outline" slot="start" color="primary"></ion-icon>
+        <ion-label>Bật Privacy Display</ion-label>
+        <ion-toggle slot="end" [checked]="settings.privacyEnabled"
+          (ionChange)="onPrivacyEnabledChange($event)" color="primary"></ion-toggle>
+      </ion-item>
+    </ion-list>
+
+    <!-- Privacy Mode -->
+    <ion-list class="settings-list">
+      <ion-list-header>
+        <ion-label>Chế độ che mờ</ion-label>
+      </ion-list-header>
+
+      <ion-item button [class.selected-item]="settings.privacyMode === 'region'"
+        (click)="onPrivacyModeChange('region')">
+        <ion-icon name="crop-outline" slot="start"
+          [color]="settings.privacyMode === 'region' ? 'primary' : 'medium'"></ion-icon>
+        <ion-label>
+          <h3>Vùng hình dạng</h3>
+          <p>Chỉ che mờ trong hình chữ nhật/tròn</p>
+        </ion-label>
+        <ion-icon name="checkmark" slot="end" color="primary" *ngIf="settings.privacyMode === 'region'"></ion-icon>
+      </ion-item>
+
+      <ion-item button [class.selected-item]="settings.privacyMode === 'fullscreen'"
+        (click)="onPrivacyModeChange('fullscreen')">
+        <ion-icon name="phone-portrait-outline" slot="start"
+          [color]="settings.privacyMode === 'fullscreen' ? 'primary' : 'medium'"></ion-icon>
+        <ion-label>
+          <h3>Toàn màn hình</h3>
+          <p>Che mờ toàn bộ vùng hiển thị</p>
+        </ion-label>
+        <ion-icon name="checkmark" slot="end" color="primary" *ngIf="settings.privacyMode === 'fullscreen'"></ion-icon>
+      </ion-item>
+    </ion-list>
+
+    <!-- Effect type -->
+    <ion-list class="settings-list">
+      <ion-list-header>
+        <ion-label>Hiệu ứng khi nghiêng</ion-label>
+      </ion-list-header>
+
+      <ion-item button [class.selected-item]="settings.effectType === 'dim'"
+        (click)="onEffectTypeChange('dim')">
+        <ion-icon name="moon-outline" slot="start"
+          [color]="settings.effectType === 'dim' ? 'primary' : 'medium'"></ion-icon>
+        <ion-label>
+          <h3>Tối dần (Dim)</h3>
+          <p>Màn hình tối lại khi nghiêng</p>
+        </ion-label>
+        <ion-icon name="checkmark" slot="end" color="primary" *ngIf="settings.effectType === 'dim'"></ion-icon>
+      </ion-item>
+
+      <ion-item button [class.selected-item]="settings.effectType === 'blur'"
+        (click)="onEffectTypeChange('blur')">
+        <ion-icon name="eye-off-outline" slot="start"
+          [color]="settings.effectType === 'blur' ? 'primary' : 'medium'"></ion-icon>
+        <ion-label>
+          <h3>Mờ nhòe (Blur)</h3>
+          <p>Nội dung bị làm mờ khi nghiêng</p>
+        </ion-label>
+        <ion-icon name="checkmark" slot="end" color="primary" *ngIf="settings.effectType === 'blur'"></ion-icon>
+      </ion-item>
+    </ion-list>
+
+    <!-- Theme Mode -->
+    <ion-list class="settings-list">
+      <ion-list-header>
+        <ion-label>Giao diện</ion-label>
+      </ion-list-header>
+
+      <ion-item button [class.selected-item]="settings.themeMode === 'dark'"
+        (click)="onThemeChange('dark')">
+        <ion-icon name="moon" slot="start"
+          [color]="settings.themeMode === 'dark' ? 'primary' : 'medium'"></ion-icon>
+        <ion-label>
+          <h3>Dark Mode</h3>
+          <p>Nền tối, bảo vệ mắt ban đêm</p>
+        </ion-label>
+        <ion-icon name="checkmark" slot="end" color="primary" *ngIf="settings.themeMode === 'dark'"></ion-icon>
+      </ion-item>
+
+      <ion-item button [class.selected-item]="settings.themeMode === 'light'"
+        (click)="onThemeChange('light')">
+        <ion-icon name="sunny" slot="start"
+          [color]="settings.themeMode === 'light' ? 'warning' : 'medium'"></ion-icon>
+        <ion-label>
+          <h3>Light Mode</h3>
+          <p>Nền sáng, phù hợp ban ngày</p>
+        </ion-label>
+        <ion-icon name="checkmark" slot="end" color="primary" *ngIf="settings.themeMode === 'light'"></ion-icon>
+      </ion-item>
+    </ion-list>
+
+    <!-- Tolerance -->
+    <ion-list class="settings-list">
+      <ion-list-header>
+        <ion-label>Vùng chấp nhận: ±{{ settings.tolerance }}°</ion-label>
+      </ion-list-header>
+      <ion-item>
+        <ion-range [value]="settings.tolerance" [min]="5" [max]="30" [step]="1" color="primary"
+          (ionChange)="onToleranceChange($event)">
+          <ion-label slot="start">Hẹp</ion-label>
+          <ion-label slot="end">Rộng</ion-label>
+        </ion-range>
+      </ion-item>
+    </ion-list>
+
+    <!-- Recalibrate -->
+    <ion-list class="settings-list">
+      <ion-list-header>
+        <ion-label>Hiệu chỉnh</ion-label>
+      </ion-list-header>
+      <ion-item button (click)="recalibrate()">
+        <ion-icon name="refresh-outline" slot="start" color="warning"></ion-icon>
+        <ion-label color="warning">Hiệu chỉnh lại góc nghiêng</ion-label>
+        <ion-icon name="chevron-forward" slot="end"></ion-icon>
+      </ion-item>
+    </ion-list>
+
+    <!-- Info -->
+    <div class="info-card">
+      <ion-icon name="information-circle-outline"></ion-icon>
+      <p>Góc hiện tại: Beta {{ settings.baseBeta | number:'1.1-1' }}° / Gamma {{ settings.baseGamma | number:'1.1-1' }}°</p>
+    </div>
+
+  </ng-container>
+</ion-content>

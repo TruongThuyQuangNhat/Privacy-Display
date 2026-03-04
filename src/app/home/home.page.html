@@ -1,20 +1,204 @@
-<ion-header [translucent]="true">
+<ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+    <ion-title>Privacy Display</ion-title>
+    <ion-buttons slot="end">
+      <div class="status-badge" [class.active]="!isPrivacyActive" [class.hidden]="isPrivacyActive">
+        <ion-icon [name]="isPrivacyActive ? 'eye-off' : 'eye'"></ion-icon>
+        {{ isPrivacyActive ? 'PROTECTED' : 'VISIBLE' }}
+      </div>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="home-content" [scrollY]="false">
+  <div class="home-layout">
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+    <!-- ═══ TOP: Display Area ═══════════════════════════════════ -->
+    <div class="display-area" #displayArea
+      (touchmove)="onShapeTouchMove($event)"
+      (touchend)="onShapeTouchEnd()">
+
+      <!-- Content placeholder (the "secret" content) -->
+      <div class="content-placeholder">
+
+        <!-- Header row -->
+        <div class="cp-header">
+          <div class="cp-avatar">
+            <ion-icon name="person-circle"></ion-icon>
+          </div>
+          <div class="cp-header-text">
+            <span class="cp-name">Trương Thụy Quang Nhật</span>
+            <span class="cp-time">
+              <ion-icon name="time-outline"></ion-icon> 2 phút trước
+            </span>
+          </div>
+          <ion-icon name="ellipsis-horizontal" class="cp-more"></ion-icon>
+        </div>
+
+        <!-- Text content -->
+        <p class="cp-text">
+          <ion-icon name="lock-closed" class="cp-inline-icon secure"></ion-icon>
+          <strong>Tin nhắn bảo mật:</strong> Mã OTP của bạn là <span class="cp-highlight">847-291</span>.
+          Không chia sẻ mã này với bất kỳ ai, kể cả nhân viên ngân hàng.
+          Mã có hiệu lực trong vòng <strong>5 phút</strong>.
+        </p>
+
+        <div class="cp-divider"></div>
+
+        <!-- Bank info card -->
+        <div class="cp-card">
+          <div class="cp-card-row">
+            <ion-icon name="card-outline" class="cp-card-icon bank"></ion-icon>
+            <div>
+              <span class="cp-card-label">Số tài khoản</span>
+              <span class="cp-card-value">•••• •••• 4821</span>
+            </div>
+          </div>
+          <div class="cp-card-row">
+            <ion-icon name="cash-outline" class="cp-card-icon money"></ion-icon>
+            <div>
+              <span class="cp-card-label">Số dư hiện tại</span>
+              <span class="cp-card-value highlight">12.450.000 ₫</span>
+            </div>
+          </div>
+          <div class="cp-card-row">
+            <ion-icon name="arrow-down-circle-outline" class="cp-card-icon incoming"></ion-icon>
+            <div>
+              <span class="cp-card-label">Giao dịch gần nhất</span>
+              <span class="cp-card-value">+2.000.000 ₫ — Nguyễn Thu Hà</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Message thread -->
+        <p class="cp-section-label">
+          <ion-icon name="chatbubbles-outline"></ion-icon> Tin nhắn riêng tư
+        </p>
+
+        <div class="cp-message incoming">
+          <ion-icon name="person-circle" class="msg-avatar"></ion-icon>
+          <div class="msg-bubble">
+            Anh ơi, em chuyển khoản rồi nhé. Password wifi nhà mình là <strong>MyHome@2024!</strong>
+          </div>
+        </div>
+        <div class="cp-message outgoing">
+          <div class="msg-bubble">
+            Ok em, anh nhận được rồi 👍 Nhớ đừng gửi pass qua đây nha.
+          </div>
+        </div>
+        <div class="cp-message incoming">
+          <ion-icon name="person-circle" class="msg-avatar"></ion-icon>
+          <div class="msg-bubble">
+            Ừ anh nhắc đúng rồi 😅 Thôi lần sau dùng Privacy Display cho chắc ăn!
+          </div>
+        </div>
+
+        <!-- Health data -->
+        <p class="cp-section-label">
+          <ion-icon name="fitness-outline"></ion-icon> Dữ liệu sức khoẻ hôm nay
+        </p>
+
+        <div class="cp-stats-row">
+          <div class="cp-stat">
+            <ion-icon name="footsteps-outline" class="stat-icon steps"></ion-icon>
+            <span class="stat-val">8,432</span>
+            <span class="stat-unit">bước</span>
+          </div>
+          <div class="cp-stat">
+            <ion-icon name="heart-outline" class="stat-icon heart"></ion-icon>
+            <span class="stat-val">72</span>
+            <span class="stat-unit">bpm</span>
+          </div>
+          <div class="cp-stat">
+            <ion-icon name="flame-outline" class="stat-icon cal"></ion-icon>
+            <span class="stat-val">1,240</span>
+            <span class="stat-unit">kcal</span>
+          </div>
+          <div class="cp-stat">
+            <ion-icon name="moon-outline" class="stat-icon sleep"></ion-icon>
+            <span class="stat-val">7.2</span>
+            <span class="stat-unit">giờ ngủ</span>
+          </div>
+        </div>
+
+        <!-- Note -->
+        <div class="cp-note">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          <span>Đây là nội dung mô phỏng. Privacy Display sẽ che mờ vùng này khi bạn nghiêng điện thoại.</span>
+        </div>
+
+      </div>
+
+      <!-- Shape overlay: REGION mode -->
+      <ng-container *ngIf="settings?.privacyMode === 'region'">
+        <!-- Draggable privacy shape -->
+        <div class="privacy-shape" [ngStyle]="shapeStyle"
+          (touchstart)="onShapeTouchStart($event)"
+          [ngStyle]="shapeStyle">
+          <!-- Inner overlay effect -->
+          <div class="shape-overlay" [ngStyle]="overlayStyle"></div>
+          <div class="shape-border"></div>
+          <div class="drag-hint" *ngIf="!isPrivacyActive">
+            <ion-icon name="move-outline"></ion-icon>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Fullscreen overlay: FULLSCREEN mode -->
+      <div class="fullscreen-overlay" *ngIf="settings?.privacyMode === 'fullscreen'" [ngStyle]="overlayStyle"></div>
+
+      <!-- Tilt indicator (small badge bottom-right) -->
+      <div class="tilt-badge" *ngIf="settings">
+        <ion-icon name="compass-outline"></ion-icon>
+        {{ isPrivacyActive ? 'Lệch góc' : 'An toàn' }}
+      </div>
+    </div>
+
+    <!-- ═══ BOTTOM: Controls ═════════════════════════════════════ -->
+    <div class="controls-area" *ngIf="settings">
+
+      <!-- Shape type selector -->
+      <div class="control-section">
+        <p class="control-label">Hình dạng</p>
+        <div class="shape-selector">
+          <button class="shape-btn" [class.selected]="shape?.type === 'rectangle'"
+            (click)="setShapeType('rectangle')">
+            <div class="shape-preview rect"></div>
+            <span>Chữ nhật</span>
+          </button>
+          <button class="shape-btn" [class.selected]="shape?.type === 'square'"
+            (click)="setShapeType('square')">
+            <div class="shape-preview square"></div>
+            <span>Vuông</span>
+          </button>
+          <button class="shape-btn" [class.selected]="shape?.type === 'circle'"
+            (click)="setShapeType('circle')">
+            <div class="shape-preview circle"></div>
+            <span>Tròn</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Size slider -->
+      <div class="control-section">
+        <p class="control-label">Kích thước</p>
+        <ion-range
+          [value]="sizeSliderValue"
+          [min]="20" [max]="90" [step]="1"
+          color="primary"
+          (ionChange)="onSizeChange($event)">
+          <ion-icon slot="start" name="remove-circle-outline"></ion-icon>
+          <ion-icon slot="end" name="add-circle-outline"></ion-icon>
+        </ion-range>
+      </div>
+
+      <!-- Position hint -->
+      <div class="control-hint">
+        <ion-icon name="hand-left-outline"></ion-icon>
+        <span>Kéo hình trong vùng xanh để di chuyển</span>
+      </div>
+
+    </div>
+
   </div>
 </ion-content>
